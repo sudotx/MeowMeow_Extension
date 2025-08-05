@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "HL Hackathon Extension",
+  "name": "MeowVerse",
   "version": "1.0.0",
-  "description": "Your custom description here - A powerful Chrome extension for the HL Hackathon",
+  "description": "MeowVerse Extension",
   "icons": {
     "16": "vite.svg",
     "32": "vite.svg",
@@ -11,7 +11,9 @@
   },
   "permissions": [
     "activeTab",
-    "storage"
+    "storage",
+	"alarms",
+	"tabs"
   ],
   "action": {
     "default_popup": "index.html",
