@@ -217,14 +217,13 @@ function App() {
 				<div className="flex items-center justify-between p-6">
 					<div className="flex items-center space-x-4">
 						<div className="relative">
-							<div className="text-3xl animate-bounce" style={{ animationDuration: '3s' }}>🐈‍⬛</div>
+							<div className="text-2xl animate-bounce" style={{ animationDuration: '3s' }}>🐈‍⬛</div>
 							<div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
 						</div>
 						<div>
-							<h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+							<h1 className="text-sm font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
 								MeowVerse
 							</h1>
-							<p className="text-sm text-gray-300 font-medium">DeFi Companion</p>
 						</div>
 					</div>
 					<div className="flex items-center space-x-2">
@@ -385,7 +384,7 @@ function App() {
 						{/* Detect phishing websites */}
 						<div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-white/5">
 							<div>
-								<span className="text-sm font-semibold text-white">Detect phishing websites</span>
+								<span className="text-xs font-semibold text-white">Detect phishing websites</span>
 								<p className="text-xs text-gray-400 mt-1">Protect against malicious sites</p>
 							</div>
 							<ToggleSwitch
@@ -396,13 +395,13 @@ function App() {
 
 						{/* Explorer Section */}
 						<div>
-							<h3 className="font-semibold text-sm mb-4 text-gray-200 flex items-center space-x-2">
+							<h3 className="font-semibold text-xs mb-4 text-gray-200 flex items-center space-x-2">
 								Explorer Features
 							</h3>
 							<div className="space-y-3 ml-6">
 								{Object.entries(settings.explorer).map(([key, value]) => (
 									<div key={key} className="flex items-center justify-between p-3 bg-gray-800/20 rounded-lg border border-white/5">
-										<span className="text-sm text-gray-200 font-medium">
+										<span className="text-xs text-gray-200 font-medium">
 											{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
 										</span>
 										<ToggleSwitch
@@ -418,7 +417,7 @@ function App() {
 
 				{/* Enhanced Footer */}
 				<div className="text-center pt-6">
-					<button className="text-sm text-purple-400 hover:text-purple-300 transition-colors duration-300 font-medium hover:underline">
+					<button className="text-xs text-purple-400 hover:text-purple-300 transition-colors duration-300 font-medium">
 						Submit a whitelist domain
 					</button>
 				</div>

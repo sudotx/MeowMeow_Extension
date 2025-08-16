@@ -29,12 +29,12 @@
 	"content_scripts": [
 		{
 			"matches": ["<all_urls>"],
-			"js": ["src/content.js"],
+			"js": ["src/content/content.js"],
 			"run_at": "document_idle"
 		}
 	],
 	"background": {
-		"service_worker": "src/background.js",
+		"service_worker": "src/background/background.js",
 		"type": "module"
 	},
 	"web_accessible_resources": [

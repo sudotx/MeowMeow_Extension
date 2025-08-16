@@ -560,7 +560,7 @@ export async function getSupportedTokens(): Promise<string[]> {
 }
 
 // Get swap history for a user (simplified)
-export async function getSwapHistory(userAddress: string): Promise<{
+export async function getSwapHistory(_userAddress: string): Promise<{
 	txHash: string;
 	tokenIn: string;
 	tokenOut: string;
