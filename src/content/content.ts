@@ -1,4 +1,10 @@
 // Content script for token detection and overlay banner
+// Content script - runs in the context of web pages
+// This script can interact with the DOM of the current page
+
+console.log('Content script loaded');
+
+
 interface TokenInfo {
   symbol: string;
   address?: string;
@@ -135,30 +141,39 @@ function init() {
   // Detect tokens
   const tokens = detectTokens();
   
-  // Get page info
-  const pageInfo: PageInfo = {
-    title: document.title,
-    url: window.location.href,
-    domain: window.location.hostname,
-    tokens
-  };
-  
   // Send page info to popup
   chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     if (request.action === 'getPageInfo') {
-      sendResponse(pageInfo);
+		// Get page info
+		const pageInfo: PageInfo = {
+			title: document.title,
+			url: window.location.href,
+			domain: window.location.hostname,
+			tokens
+		  };
+		sendResponse(pageInfo);
     }
   });
-  
-  // Show banner if conditions are met
-  if (shouldShowBanner()) {
-    setTimeout(createOverlayBanner, 2000); // Show after 2 seconds
-  }
+
+
+// Example: Send a message to background script
+chrome.runtime.sendMessage({
+	action: 'contentScriptLoaded',
+	url: window.location.href
+});
+
+
+// Show banner if conditions are met
+if (shouldShowBanner()) {
+	setTimeout(createOverlayBanner, 2000); // Show after 2 seconds
+}
 }
 
 // Run initialization
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+	document.addEventListener('DOMContentLoaded', init);
 } else {
-  init();
+	init();
 }
+
+export { };
