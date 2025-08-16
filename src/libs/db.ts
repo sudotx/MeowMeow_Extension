@@ -1,7 +1,7 @@
 import { fetchData } from './storage'
 import { version } from '../../package.json'
 import Browser from "webextension-polyfill";
-import cute from "@assets/img/memes/cute-128.png";
+// import cute from "@assets/img/memes/cute-128.png";
 
 import {
   PROTOCOLS_API,
@@ -127,7 +127,7 @@ Browser.alarms.onAlarm.addListener(async (a) => {
 async function startupTasks() {
   console.time("startupTasks");
   await updateDb();
-  Browser.action.setIcon({ path: cute });
+//   Browser.action.setIcon({ path: cute });
   console.timeEnd("startupTasks");
 }
 

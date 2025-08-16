@@ -9,18 +9,4 @@ export default defineConfig({
     react(),
     crx({ manifest })
   ],
-  build: {
-    rollupOptions: {
-      input: {
-        popup: 'index.html',
-        background: 'src/background.ts',
-        content: 'src/content.ts'
-      },
-      output: {
-        entryFileNames: 'src/[name].js',
-        chunkFileNames: 'src/[name].js',
-        assetFileNames: 'src/[name].[ext]'
-      }
-    }
-  }
 })

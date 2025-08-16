@@ -2,10 +2,10 @@ console.log("background loaded");
 
 import Browser from "webextension-polyfill";
 
-import cute from "@assets/img/memes/cute-128.png";
-import maxPain from "@assets/img/memes/max-pain-128.png";
-import que from "@assets/img/memes/que-128.png";
-import upOnly from "@assets/img/memes/up-only-128.png";
+// import cute from "@assets/img/memes/cute-128.png";
+// import maxPain from "@assets/img/memes/max-pain-128.png";
+// import que from "@assets/img/memes/que-128.png";
+// import upOnly from "@assets/img/memes/up-only-128.png";
 
 import { getStorage } from "./libs/helpers";
 import { checkDomain } from "./libs/phishingDetector";
@@ -19,7 +19,7 @@ async function getCurrentTab() {
 async function handlePhishingCheck(trigger: string, tab?: Browser.Tabs.Tab) {
   const phishingDetector = await getStorage("local", "settings:phishingDetector", true);
   if (!phishingDetector) {
-    await Browser.action.setIcon({ path: cute });
+    // await Browser.action.setIcon({ path: cute });
     return;
   }
 
@@ -79,16 +79,16 @@ async function handlePhishingCheck(trigger: string, tab?: Browser.Tabs.Tab) {
   }
 
   if (isTrusted) {
-    Browser.action.setIcon({ path: upOnly });
+    // Browser.action.setIcon({ path: upOnly });
     Browser.action.setTitle({ title: reason });
     return;
   }
 
   if (isPhishing) {
-    Browser.action.setIcon({ path: maxPain });
+    // Browser.action.setIcon({ path: maxPain });
     Browser.action.setTitle({ title: reason });
   } else {
-    Browser.action.setIcon({ path: que });
+    // Browser.action.setIcon({ path: que });
     Browser.action.setTitle({ title: reason });
   }
 }

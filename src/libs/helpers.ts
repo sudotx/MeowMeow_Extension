@@ -1,8 +1,7 @@
 import Browser from "webextension-polyfill";
 
-import { ACCOUNTS_API_V2, PRICES_API } from "./constants";
 import type { Prices, TagsDataV2 } from "./constants";
-import { ICONS } from "./tagging-helpers";
+import { ACCOUNTS_API_V2, PRICES_API } from "./constants";
 
 export const getIsMac = () => /(Mac|iPhone|iPod|iPad)/i.test(navigator?.platform);
 
@@ -98,12 +97,6 @@ export const getImageUrl = (url: string) => {
   return Browser.runtime.getURL(url);
 };
 
-export const getTagIconUrl = (link: string) => {
-  if (ICONS[link]) return Browser.runtime.getURL(ICONS[link]);
-  if (link.startsWith("data:image")) return link;
-  if (link.startsWith("https")) return link;
-  return Browser.runtime.getURL(link);
-};
 
 export function createInlineLlamaIcon(src: string, alt: string, size = 12, className = "mr-1 mCS_img_loaded") {
   const icon = document.createElement("img");
