@@ -4,62 +4,62 @@ import { fuzzyDomainsDb, allowedDomainsDb, blockedDomainsDb } from "./db";
 const DEFAULT_LEVENSHTEIN_TOLERANCE = 3;
 
 interface CheckDomainResult {
-  result: boolean;
-  type: "allowed" | "blocked" | "fuzzy" | "unknown";
-  extra?: string;
+	result: boolean;
+	type: "allowed" | "blocked" | "fuzzy" | "unknown";
+	extra?: string;
 }
 
 let domainCheckCache = new Map<string, CheckDomainResult>();
 let lastCacheClear = Date.now();
 
 export function clearDomainCheckCache() {
-  const now = Date.now();
-  if (now - lastCacheClear > 1000 * 60 * 60) { // clear cache every hour
-    domainCheckCache = new Map();
-    lastCacheClear = now;
-  }
+	const now = Date.now();
+	if (now - lastCacheClear > 1000 * 60 * 60) { // clear cache every hour
+		domainCheckCache = new Map();
+		lastCacheClear = now;
+	}
 }
 
 const defaultCheckResponse = { result: false, type: "unknown" } as CheckDomainResult;
 
 export async function checkDomain(domain: string): Promise<CheckDomainResult> {
-  if (!domain || !allowedDomainsDb.data.size)  return defaultCheckResponse;
+	if (!domain || !allowedDomainsDb.data.size) return defaultCheckResponse;
 
-  clearDomainCheckCache();
-  if (!domainCheckCache.has(domain)) {
-    domainCheckCache.set(domain, _checkDomain(domain));
-  }
+	clearDomainCheckCache();
+	if (!domainCheckCache.has(domain)) {
+		domainCheckCache.set(domain, _checkDomain(domain));
+	}
 
-  return domainCheckCache.get(domain)!;
+	return domainCheckCache.get(domain)!;
 }
 
 
 function _checkDomain(domain: string): CheckDomainResult {
-  const topLevelDomain = domain.split(".").slice(-2).join(".");
-  const isAllowed = allowedDomainsDb.data.has(domain) || allowedDomainsDb.data.has(topLevelDomain);
-  if (isAllowed)
-    return { result: false, type: "allowed" };
+	const topLevelDomain = domain.split(".").slice(-2).join(".");
+	const isAllowed = allowedDomainsDb.data.has(domain) || allowedDomainsDb.data.has(topLevelDomain);
+	if (isAllowed)
+		return { result: false, type: "allowed" };
 
 
-  const isBlocked = blockedDomainsDb.data.has(domain) || blockedDomainsDb.data.has(topLevelDomain);
-  if (isBlocked)
-    return { result: true, type: "blocked" };
+	const isBlocked = blockedDomainsDb.data.has(domain) || blockedDomainsDb.data.has(topLevelDomain);
+	if (isBlocked)
+		return { result: true, type: "blocked" };
 
 
-  let fuzzyResult: CheckDomainResult | undefined
+	let fuzzyResult: CheckDomainResult | undefined
 
-  for (const fuzzyDomain of fuzzyDomainsDb.data) {
-    if (fuzzyResult) break;
-    const distance = levenshtein.get(fuzzyDomain, domain)
-    let distanceTop = distance
-    if (topLevelDomain !== domain)
-      distanceTop = levenshtein.get(fuzzyDomain, topLevelDomain)
-    const isMatched = distance <= DEFAULT_LEVENSHTEIN_TOLERANCE || distanceTop <= DEFAULT_LEVENSHTEIN_TOLERANCE
-    if (isMatched) {
-      console.log("fuzzy match", { domain, fuzzyDomain, distance })
-      fuzzyResult = { result: true, type: "fuzzy", extra: fuzzyDomain }
-    }
-  }
+	for (const fuzzyDomain of fuzzyDomainsDb.data) {
+		if (fuzzyResult) break;
+		const distance = levenshtein.get(fuzzyDomain, domain)
+		let distanceTop = distance
+		if (topLevelDomain !== domain)
+			distanceTop = levenshtein.get(fuzzyDomain, topLevelDomain)
+		const isMatched = distance <= DEFAULT_LEVENSHTEIN_TOLERANCE || distanceTop <= DEFAULT_LEVENSHTEIN_TOLERANCE
+		if (isMatched) {
+			console.log("fuzzy match", { domain, fuzzyDomain, distance })
+			fuzzyResult = { result: true, type: "fuzzy", extra: fuzzyDomain }
+		}
+	}
 
-  return fuzzyResult ?? defaultCheckResponse
+	return fuzzyResult ?? defaultCheckResponse
 }

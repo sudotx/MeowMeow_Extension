@@ -31,6 +31,7 @@ interface Settings {
 	explorer: {
 		enableAddressTags: boolean;
 		enableTokenPrices: boolean;
+		optimizeSwaps: boolean;
 	};
 }
 
@@ -48,7 +49,8 @@ function App() {
 		explorer: {
 			enableAddressTags: true,
 			enableTokenPrices: true,
-		}
+			optimizeSwaps: true
+		},
 	});
 
 	useEffect(() => {
@@ -214,21 +216,17 @@ function App() {
 
 			{/* Header with glassmorphism effect */}
 			<div className="relative z-10 backdrop-blur-xl bg-white/5 border-b border-white/10">
-				<div className="flex items-center justify-between p-6">
-					<div className="flex items-center space-x-4">
+				<div className="flex items-center justify-between p-4">
+					<div className="flex items-center space-x-3">
 						<div className="relative">
 							<div className="text-2xl animate-bounce" style={{ animationDuration: '3s' }}>🐈‍⬛</div>
 							<div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
 						</div>
 						<div>
-							<h1 className="text-sm font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+							<h1 className="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
 								MeowVerse
 							</h1>
 						</div>
-					</div>
-					<div className="flex items-center space-x-2">
-						<div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-						<span className="text-xs text-gray-400">Connected</span>
 					</div>
 				</div>
 			</div>
@@ -376,13 +374,9 @@ function App() {
 
 				{/* Enhanced Settings Section */}
 				<div className="space-y-4">
-					<div className="flex items-center space-x-3">
-						<h2 className="text-lg font-semibold text-white">Settings</h2>
-					</div>
-
 					<div className="backdrop-blur-xl bg-white/5 rounded-2xl p-6 border border-white/10 shadow-xl space-y-6">
 						{/* Detect phishing websites */}
-						<div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-xl border border-white/5">
+						<div className="flex items-center justify-between p-2 bg-gray-800/30 rounded-xl border border-white/5">
 							<div>
 								<span className="text-xs font-semibold text-white">Detect phishing websites</span>
 								<p className="text-xs text-gray-400 mt-1">Protect against malicious sites</p>
@@ -393,10 +387,10 @@ function App() {
 							/>
 						</div>
 
-						{/* Explorer Section */}
+						{/* Features Section */}
 						<div>
 							<h3 className="font-semibold text-xs mb-4 text-gray-200 flex items-center space-x-2">
-								Explorer Features
+								Features
 							</h3>
 							<div className="space-y-3 ml-6">
 								{Object.entries(settings.explorer).map(([key, value]) => (
