@@ -48,7 +48,7 @@ export interface PriceRequest {
 	orderType: 'SELL' | 'BUY';
 	userAddress: string;
 	outputReceiver: string;
-	uniquePID: string;
+	uniquePID?: string;
 }
 
 export interface QuoteRequest {
@@ -59,7 +59,7 @@ export interface QuoteRequest {
 	orderType: 'SELL' | 'BUY';
 	userAddress: string;
 	outputReceiver: string;
-	uniquePID: string;
+	uniquePID?: string;
 }
 
 export interface ExchangeRateRequest {
@@ -101,6 +101,7 @@ const GLUEX_CONFIG = {
 
 // API key - should be stored in environment variables
 const API_KEY = process.env.GLUEX_API_KEY || '';
+const INTEGRATOR_PID = process.env.INTEGRATOR_PID || ''; // this is the uniquePID parameter in the body of each API request:
 
 // Create axios instances for different services
 const routerClient = axios.create({
@@ -166,27 +167,13 @@ async function apiRequest<T>(
 }
 
 // Get liquidity information from GlueX Router
-export async function getLiquidity(): Promise<LiquidityInfo[]> {
+export async function getLiquidity(): Promise<any> {
 	try {
-		const response = await apiRequest<LiquidityInfo[]>(routerClient, '/liquidity');
+		const response = await apiRequest<any>(routerClient, '/liquidity');
 		return response;
 	} catch (error) {
 		console.error('Error fetching liquidity:', error);
-		// Return mock data for development
-		return [
-			{
-				protocol: 'Uniswap V3',
-				tvl: 15000000000,
-				apy: 2.5,
-				risk: 'low'
-			},
-			{
-				protocol: 'SushiSwap',
-				tvl: 8000000000,
-				apy: 3.2,
-				risk: 'medium'
-			}
-		];
+		throw error;
 	}
 }
 
@@ -195,7 +182,7 @@ export async function getPrice(priceRequest: PriceRequest): Promise<any> {
 	try {
 		const response = await apiRequest<any>(routerClient, '/v1/price', {
 			method: 'POST',
-			data: priceRequest
+			data: { ...priceRequest, uniquePID: INTEGRATOR_PID }
 		});
 		return response;
 	} catch (error) {
@@ -209,7 +196,7 @@ export async function getQuote(quoteRequest: QuoteRequest): Promise<any> {
 	try {
 		const response = await apiRequest<any>(routerClient, '/v1/quote', {
 			method: 'POST',
-			data: quoteRequest
+			data: { ...quoteRequest, uniquePID: INTEGRATOR_PID }
 		});
 		return response;
 	} catch (error) {
@@ -225,7 +212,6 @@ export async function getSwapEstimate(
 	amount: number,
 	userAddress: string,
 	outputReceiver: string,
-	uniquePID: string,
 	chainID: string = 'ethereum'
 ): Promise<SwapEstimate> {
 	try {
@@ -237,7 +223,6 @@ export async function getSwapEstimate(
 			orderType: 'SELL',
 			userAddress,
 			outputReceiver,
-			uniquePID
 		};
 
 		const response = await getQuote(quoteRequest);
@@ -252,43 +237,7 @@ export async function getSwapEstimate(
 		};
 	} catch (error) {
 		console.error('Error getting swap estimate:', error);
-		// Return mock data for development
-		return {
-			slippage: 0.5,
-			gasCost: 0.02 + Math.random() * 0.03,
-			estimatedOutput: amount * (0.995 + Math.random() * 0.01),
-			route: [fromToken, 'USDC', toToken],
-			priceImpact: Math.random() * 2
-		};
-	}
-}
-
-// Execute swap transaction using GlueX Router (using price endpoint)
-export async function executeSwap(swapRequest: SwapRequest): Promise<{ success: boolean; txHash?: string; error?: string }> {
-	try {
-		const priceRequest: PriceRequest = {
-			chainID: 'ethereum',
-			inputToken: swapRequest.fromToken,
-			outputToken: swapRequest.toToken,
-			inputAmount: swapRequest.amount.toString(),
-			orderType: 'SELL',
-			userAddress: swapRequest.userAddress,
-			outputReceiver: swapRequest.userAddress,
-			uniquePID: generateUniquePID()
-		};
-
-		const response = await getPrice(priceRequest);
-
-		return {
-			success: true,
-			txHash: response.txHash || 'mock-tx-hash'
-		};
-	} catch (error) {
-		console.error('Error executing swap:', error);
-		return {
-			success: false,
-			error: error instanceof Error ? error.message : 'Unknown error'
-		};
+		throw error;
 	}
 }
 
@@ -302,11 +251,7 @@ export async function getExchangeRates(rateRequests: ExchangeRateRequest[]): Pro
 		return response;
 	} catch (error) {
 		console.error('Error fetching exchange rates:', error);
-		// Return mock data for development
-		return rateRequests.map(() => ({
-			rate: Math.random() * 2 + 0.5,
-			timestamp: Date.now()
-		}));
+		throw error;
 	}
 }
 
@@ -350,70 +295,7 @@ export async function getActiveProtocols(): Promise<any[]> {
 		return response;
 	} catch (error) {
 		console.error('Error fetching active protocols:', error);
-		// Return mock data for development
-		return [
-			{
-				protocol: 'Aave',
-				apy: 3.2,
-				risk: 'low',
-				tvl: 15000000000,
-				description: 'Leading lending protocol with high liquidity'
-			},
-			{
-				protocol: 'Compound',
-				apy: 2.8,
-				risk: 'low',
-				tvl: 8000000000,
-				description: 'Established lending protocol'
-			}
-		];
-	}
-}
-
-// Fetch yield optimization options using GlueX Yield API
-export async function fetchYieldOptions(): Promise<YieldOption[]> {
-	try {
-		const protocols = await getActiveProtocols();
-		return protocols.map(protocol => ({
-			protocol: protocol.name || protocol.protocol,
-			apy: protocol.apy || 0,
-			risk: protocol.risk || 'medium',
-			tvl: protocol.tvl || 0,
-			description: protocol.description || ''
-		}));
-	} catch (error) {
-		console.error('Error fetching yield options:', error);
-		// Return mock data for development
-		return [
-			{
-				protocol: 'Aave',
-				apy: 3.2,
-				risk: 'low',
-				tvl: 15000000000,
-				description: 'Leading lending protocol with high liquidity'
-			},
-			{
-				protocol: 'Compound',
-				apy: 2.8,
-				risk: 'low',
-				tvl: 8000000000,
-				description: 'Established lending protocol'
-			},
-			{
-				protocol: 'Yearn Finance',
-				apy: 8.5,
-				risk: 'medium',
-				tvl: 3000000000,
-				description: 'Automated yield optimization'
-			},
-			{
-				protocol: 'Convex Finance',
-				apy: 12.3,
-				risk: 'high',
-				tvl: 2000000000,
-				description: 'High-yield Curve strategies'
-			}
-		];
+		throw error;
 	}
 }
 
@@ -575,11 +457,6 @@ export async function getSwapHistory(_userAddress: string): Promise<{
 		console.error('Error fetching swap history:', error);
 		return [];
 	}
-}
-
-// Helper functions
-function generateUniquePID(): string {
-	return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
 }
 
 function getTokenAddress(symbol: string): string {

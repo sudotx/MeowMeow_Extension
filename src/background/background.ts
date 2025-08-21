@@ -1,8 +1,9 @@
 // Background script for handling API calls
 import {
 	fetchExchangeRates,
-	fetchYieldOptions,
-	getSwapEstimate
+	getSwapEstimate,
+	getExchangeRates as apiGetExchangeRates,
+	// type YieldOption
 } from '../libs/api';
 
 console.log("background loaded");
@@ -20,7 +21,9 @@ import { checkDomain } from '../libs/phishingDetector';
 // Re-export API functions for background script use
 const backgroundFetchExchangeRates = fetchExchangeRates;
 const backgroundGetSwapEstimate = getSwapEstimate;
-const backgroundFetchYieldOptions = fetchYieldOptions;
+// const backgroundFetchYieldOptions = fetchYieldOptions;
+
+let lastPhishingResult: any = null;
 
 // Execute swap intent via user's wallet
 async function getCurrentTab() {
@@ -39,6 +42,7 @@ async function handlePhishingCheck(trigger: string, tab?: Browser.Tabs.Tab) {
 	let isPhishing = false;
 	let isTrusted = false;
 	let reason = "Unknown website";
+	let phishingResult: any = null;
 	try {
 		if (!tab)
 			tab = await getCurrentTab();
@@ -56,10 +60,12 @@ async function handlePhishingCheck(trigger: string, tab?: Browser.Tabs.Tab) {
 			// already captured and redirected to metamask phishing warning page
 			isPhishing = true;
 			reason = "Phishing detected by Metamask";
+			phishingResult = { result: true, type: "blocked", extra: "Metamask" };
 		} else {
 			const domain = new URL(url).hostname.replace("www.", "");
 			if (!domain) return;
 			const res = await checkDomain(domain);
+			phishingResult = res;
 			console.log("Phishing check result", { domain, res, trigger });
 			isPhishing = res.result;
 			if (isPhishing) {
@@ -89,7 +95,11 @@ async function handlePhishingCheck(trigger: string, tab?: Browser.Tabs.Tab) {
 		isTrusted = false;
 		isPhishing = false;
 		reason = "Invalid URL";
+		phishingResult = { result: false, type: "unknown", extra: "Invalid URL" };
 	}
+
+	lastPhishingResult = phishingResult;
+
 
 	if (isTrusted) {
 		// Browser.action.setIcon({ path: upOnly });
@@ -116,9 +126,30 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 			backgroundFetchExchangeRates(request.tokens).then(sendResponse);
 			return true; // Keep message channel open for async response
 
-		case 'fetchYieldOptions':
-			backgroundFetchYieldOptions().then(sendResponse);
+		case 'fetchAddressPrices':
+			const { addresses } = request;
+			const rateRequests = addresses.map((address: string) => ({
+				domestic_blockchain: 'ethereum',
+				domestic_token: address,
+				foreign_blockchain: 'ethereum',
+				foreign_token: '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48' // USDC
+			}));
+			apiGetExchangeRates(rateRequests).then(rates => {
+				const prices = addresses.reduce((acc: any, address: string, index: number) => {
+					acc[address] = rates[index]?.rate || 0;
+					return acc;
+				}, {});
+				sendResponse(prices);
+			}).catch(() => sendResponse({}));
 			return true;
+
+		case 'getPhishingResult':
+			sendResponse(lastPhishingResult);
+			return true;
+
+		// case 'fetchYieldOptions':
+		// 	backgroundFetchYieldOptions().then(sendResponse);
+		// 	return true;
 
 		case 'getSwapEstimate':
 			backgroundGetSwapEstimate(
@@ -134,17 +165,17 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 
 		case 'optimizeYield':
 			// Handle yield optimization request
-			backgroundFetchYieldOptions().then(options => {
-				// Find best yield option
-				const bestOption = options.reduce((best, current) =>
-					current.apy > best.apy ? current : best
-				);
+			// backgroundFetchYieldOptions().then(options => {
+			// 	// Find best yield option
+			// 	const bestOption = options.reduce((best, current) =>
+			// 		current.apy > best.apy ? current : best
+			// 	);
 
-				// Open new tab with optimization details
-				chrome.tabs.create({
-					url: `https://gluex.com/optimize?protocol=${bestOption.protocol}&apy=${bestOption.apy}`
-				});
-			});
+			// 	// Open new tab with optimization details
+			// 	chrome.tabs.create({
+			// 		url: `https://gluex.com/optimize?protocol=${bestOption.protocol}&apy=${bestOption.apy}`
+			// 	});
+			// });
 			break;
 	}
 });

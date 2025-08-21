@@ -16,6 +16,7 @@ interface PageInfo {
   url: string;
   domain: string;
   tokens: TokenInfo[];
+  addresses: string[];
 }
 
 // Token detection patterns
@@ -45,17 +46,16 @@ function detectTokens(): TokenInfo[] {
     });
   }
   
-  // Extract Ethereum addresses
-  const addressMatches = text.match(TOKEN_PATTERNS.addresses);
-  if (addressMatches) {
-    addressMatches.forEach(address => {
-      if (!tokens.find(t => t.address === address)) {
-        tokens.push({ symbol: address.slice(0, 6) + '...', address });
-      }
-    });
-  }
-  
   return tokens.slice(0, 10); // Limit to 10 tokens
+}
+
+function detectAddresses(): string[] {
+	const text = document.body.innerText;
+	const addressMatches = text.match(TOKEN_PATTERNS.addresses);
+	if (addressMatches) {
+		return [...new Set(addressMatches)]; // Return unique addresses
+	}
+	return [];
 }
 
 // Create overlay banner
@@ -140,6 +140,7 @@ function shouldShowBanner(): boolean {
 function init() {
   // Detect tokens
   const tokens = detectTokens();
+  const addresses = detectAddresses();
   
   // Send page info to popup
   chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
@@ -149,7 +150,8 @@ function init() {
 			title: document.title,
 			url: window.location.href,
 			domain: window.location.hostname,
-			tokens
+			tokens,
+			addresses
 		  };
 		sendResponse(pageInfo);
     }
