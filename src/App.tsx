@@ -27,15 +27,6 @@ interface SwapEstimate {
 	estimatedOutput: number;
 }
 
-interface Settings {
-	detectPhishing: boolean;
-	explorer: {
-		enableAddressTags: boolean;
-		enableTokenPrices: boolean;
-		optimizeSwaps: boolean;
-	};
-}
-
 interface PhishingResult {
 	result: boolean;
 	type: "allowed" | "blocked" | "fuzzy" | "unknown";
@@ -54,14 +45,6 @@ function App() {
 	const [addressPrices, setAddressPrices] = useState<Record<string, number>>({});
 
 
-	const [settings, setSettings] = useState<Settings>({
-		detectPhishing: true,
-		explorer: {
-			enableAddressTags: true,
-			enableTokenPrices: true,
-			optimizeSwaps: true
-		},
-	});
 
 	useEffect(() => {
 		// Check if running as Chrome extension
@@ -92,6 +75,46 @@ function App() {
 			});
 		}
 	}, []);
+
+	// Function to refresh phishing results
+	const refreshPhishingResult = () => {
+		chrome.runtime.sendMessage({ action: 'getPhishingResult' }, (response) => {
+			setPhishingResult(response);
+		});
+	};
+
+	// Function to refresh page info and trigger content script update
+	const refreshPageInfo = () => {
+		if (typeof chrome !== 'undefined' && chrome.tabs) {
+			chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+				if (tabs[0]) {
+					// Send message to content script to refresh
+					chrome.tabs.sendMessage(tabs[0].id!, { action: 'refreshPhishingCheck' }, (response) => {
+						if (response && response.success) {
+							// Wait a bit then refresh phishing result
+							setTimeout(() => {
+								refreshPhishingResult();
+							}, 500);
+						}
+					});
+					
+					// Also refresh page info
+					chrome.tabs.sendMessage(tabs[0].id!, { action: 'getPageInfo' }, (response) => {
+						if (response) {
+							setPageInfo(response);
+							// Fetch exchange rates for detected tokens
+							if (response.tokens && response.tokens.length > 0) {
+								fetchExchangeRates(response.tokens.map((t: TokenInfo) => t.symbol));
+							}
+							if (response.addresses && response.addresses.length > 0) {
+								fetchAddressPrices(response.addresses);
+							}
+						}
+					});
+				}
+			});
+		}
+	};
 
 	// Fetch exchange rates from background script
 	const fetchExchangeRates = async (tokens: string[]) => {
@@ -181,45 +204,6 @@ function App() {
 		}
 	};
 
-	const toggleSetting = (category: string, setting: string) => {
-		setSettings(prev => {
-			if (category === '') {
-				return {
-					...prev,
-					[setting]: !prev[setting as keyof Settings]
-				};
-			} else {
-				const categorySettings = prev[category as keyof Settings] as Record<string, boolean>;
-				return {
-					...prev,
-					[category]: {
-						...categorySettings,
-						[setting]: !categorySettings[setting]
-					}
-				};
-			}
-		});
-	};
-
-	const ToggleSwitch = ({
-		checked,
-		onChange
-	}: {
-		checked: boolean;
-		onChange: () => void;
-	}) => (
-		<button
-			onClick={onChange}
-			className={`relative inline-flex h-6 w-11 items-center rounded-full transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${checked ? 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/25' : 'bg-gray-600'
-				}`}
-		>
-			<span
-				className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-lg transition-all duration-300 ease-in-out ${checked ? 'translate-x-6' : 'translate-x-1'
-					}`}
-			/>
-		</button>
-	);
-
 	// Get token icon with better styling
 	const getTokenIcon = (symbol: string) => {
 		const icons: { [key: string]: string } = {
@@ -244,13 +228,33 @@ function App() {
 
 	const getPhishingStatus = () => {
 		if (!phishingResult) return { text: 'Checking...', color: 'text-gray-400' };
-		if (phishingResult.result) {
-			return { text: 'Phishing Detected', color: 'text-red-500' };
+		
+		switch (phishingResult.type) {
+			case 'allowed':
+				return { text: 'Safe', color: 'text-green-500' };
+			case 'blocked':
+				return { text: 'Phishing Detected', color: 'text-red-500' };
+			case 'fuzzy':
+				return { text: 'Suspicious', color: 'text-orange-500' };
+			case 'unknown':
+			default:
+				return { text: 'Unknown', color: 'text-yellow-500' };
 		}
-		if (phishingResult.type === 'allowed') {
-			return { text: 'Safe', color: 'text-green-500' };
+	}
+
+	const getPhishingStatusDetails = () => {
+		if (!phishingResult) return null;
+		
+		switch (phishingResult.type) {
+			case 'fuzzy':
+				return phishingResult.extra ? `Impersonating ${phishingResult.extra}` : 'Suspicious domain detected';
+			case 'blocked':
+				return 'This domain is on our blacklist';
+			case 'allowed':
+				return 'This domain is whitelisted';
+			default:
+				return 'Domain not in our database';
 		}
-		return { text: 'Unknown', color: 'text-yellow-500' };
 	}
 
 	return (
@@ -291,9 +295,34 @@ function App() {
 						</div>
 						<div className="space-y-2">
 							<p className="text-sm text-gray-200 font-medium truncate">{pageInfo.url}</p>
-							<p className={`text-xs font-mono bg-gray-800/50 px-2 py-1 rounded-lg inline-block ${getPhishingStatus().color}`}>
-								{getPhishingStatus().text}
-							</p>
+							<div className="space-y-2">
+								<div className="flex items-center space-x-2">
+									<p className={`text-xs font-mono bg-gray-800/50 px-2 py-1 rounded-lg inline-block ${getPhishingStatus().color}`}>
+										{getPhishingStatus().text}
+									</p>
+									<div className="flex space-x-1">
+										<button
+											onClick={refreshPhishingResult}
+											className="text-xs bg-gray-700/50 hover:bg-gray-600/50 px-2 py-1 rounded-lg transition-colors duration-200 hover:text-blue-400"
+											title="Refresh phishing status"
+										>
+											🔄
+										</button>
+										<button
+											onClick={refreshPageInfo}
+											className="text-xs bg-gray-700/50 hover:bg-gray-600/50 px-2 py-1 rounded-lg transition-colors duration-200 hover:text-green-400"
+											title="Refresh all page data"
+										>
+											📄
+										</button>
+									</div>
+								</div>
+								{getPhishingStatusDetails() && (
+									<p className="text-xs text-gray-400 italic">
+										{getPhishingStatusDetails()}
+									</p>
+								)}
+							</div>
 						</div>
 					</div>
 				)}
@@ -462,43 +491,6 @@ function App() {
 						</div>
 					</div>
 				)}
-
-				{/* Enhanced Settings Section */}
-				<div className="space-y-4">
-					<div className="backdrop-blur-xl bg-white/5 rounded-2xl p-4 border border-white/10 shadow-xl space-y-4">
-						{/* Detect phishing websites */}
-						<div className="flex items-center justify-between p-2 bg-gray-800/30 rounded-xl border border-white/5">
-							<div>
-								<span className="text-xs font-semibold text-white">Detect phishing websites</span>
-								<p className="text-xs text-gray-400 mt-1">Protect against malicious sites</p>
-							</div>
-							<ToggleSwitch
-								checked={settings.detectPhishing}
-								onChange={() => toggleSetting('', 'detectPhishing')}
-							/>
-						</div>
-
-						{/* Features Section */}
-						<div>
-							<h3 className="font-semibold text-xs mb-3 text-gray-200 flex items-center space-x-2">
-								Features
-							</h3>
-							<div className="space-y-2 ml-4">
-								{Object.entries(settings.explorer).map(([key, value]) => (
-									<div key={key} className="flex items-center justify-between p-2 bg-gray-800/20 rounded-lg border border-white/5">
-										<span className="text-xs text-gray-200 font-medium">
-											{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-										</span>
-										<ToggleSwitch
-											checked={value}
-											onChange={() => toggleSetting('explorer', key)}
-										/>
-									</div>
-								))}
-							</div>
-						</div>
-					</div>
-				</div>
 
 				{/* Enhanced Footer */}
 				<div className="text-center pt-4">
