@@ -1,13 +1,12 @@
-import { fetchData } from './storage'
-import { version } from '../../package.json'
 import Browser from "webextension-polyfill";
-// import cute from "@assets/img/memes/cute-128.png";
+import { version } from '../../package.json';
+import { fetchData } from './storage';
 
 import {
-	PROTOCOLS_API,
-	METAMASK_LIST_CONFIG_API,
 	DEFILLAMA_DIRECTORY_API,
+	METAMASK_LIST_CONFIG_API,
 	PROTOCOL_TVL_THRESHOLD,
+	PROTOCOLS_API,
 } from "./constants";
 
 export interface Protocol {
@@ -34,6 +33,12 @@ export const allowedDomainsDb: {
 }
 
 const cacheKey = 'cache-v' + version
+
+let initialUpdateResolved = false;
+let resolveInitialUpdate: () => void;
+export const initialUpdateDone = new Promise<void>(resolve => {
+	resolveInitialUpdate = resolve;
+});
 
 async function getData() {
 	console.time(cacheKey)
@@ -111,6 +116,11 @@ async function updateDb() {
 	allowedDomainsDb.data = new Set(allowedDomains)
 	blockedDomainsDb.data = new Set(blockedDomains)
 	fuzzyDomainsDb.data = fuzzyDomains
+
+	if (!initialUpdateResolved) {
+		resolveInitialUpdate();
+		initialUpdateResolved = true;
+	}
 }
 
 // setInterval(updateDb, 1000 * 6 * 10) // run every 10 minutes
@@ -127,7 +137,6 @@ Browser.alarms.onAlarm.addListener(async (a) => {
 async function startupTasks() {
 	console.time("startupTasks");
 	await updateDb();
-	//   Browser.action.setIcon({ path: cute });
 	console.timeEnd("startupTasks");
 }
 

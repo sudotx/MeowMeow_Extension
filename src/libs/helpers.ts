@@ -1,7 +1,7 @@
 import Browser from "webextension-polyfill";
 
-import type { Prices, TagsDataV2 } from "./constants";
-import { ACCOUNTS_API_V2, PRICES_API } from "./constants";
+import type { Prices } from "./constants";
+import { PRICES_API } from "./constants";
 
 export const getIsMac = () => /(Mac|iPhone|iPod|iPad)/i.test(navigator?.platform);
 
@@ -75,11 +75,6 @@ export async function getBatchTokenPrices(tokensWithPrefix: string[]) {
 		};
 	} = res.reduce((acc, cur) => ({ ...acc, ...cur.coins }), {});
 	return coins;
-}
-
-export async function getAccountTagsV2(address: string) {
-	const res = (await fetch(ACCOUNTS_API_V2 + "/" + address).then((res) => res.json())) as TagsDataV2;
-	return res[address];
 }
 
 // render an image to console with given url

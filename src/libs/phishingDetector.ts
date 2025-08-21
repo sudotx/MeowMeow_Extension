@@ -1,5 +1,5 @@
 import levenshtein from "fast-levenshtein";
-import { fuzzyDomainsDb, allowedDomainsDb, blockedDomainsDb } from "./db";
+import { allowedDomainsDb, blockedDomainsDb, fuzzyDomainsDb, initialUpdateDone } from "./db";
 
 const DEFAULT_LEVENSHTEIN_TOLERANCE = 3;
 
@@ -23,6 +23,7 @@ export function clearDomainCheckCache() {
 const defaultCheckResponse = { result: false, type: "unknown" } as CheckDomainResult;
 
 export async function checkDomain(domain: string): Promise<CheckDomainResult> {
+	await initialUpdateDone;
 	if (!domain || !allowedDomainsDb.data.size) return defaultCheckResponse;
 
 	clearDomainCheckCache();
@@ -35,29 +36,31 @@ export async function checkDomain(domain: string): Promise<CheckDomainResult> {
 
 
 function _checkDomain(domain: string): CheckDomainResult {
-	const topLevelDomain = domain.split(".").slice(-2).join(".");
-	const isAllowed = allowedDomainsDb.data.has(domain) || allowedDomainsDb.data.has(topLevelDomain);
-	if (isAllowed)
-		return { result: false, type: "allowed" };
+	const subDomainsToCheck: string[] = [];
+	const parts = domain.split('.');
+	for (let i = 0; i < parts.length - 1; i++) {
+		subDomainsToCheck.push(parts.slice(i).join('.'));
+	}
 
-
-	const isBlocked = blockedDomainsDb.data.has(domain) || blockedDomainsDb.data.has(topLevelDomain);
-	if (isBlocked)
-		return { result: true, type: "blocked" };
-
+	for (const subDomain of subDomainsToCheck) {
+		if (allowedDomainsDb.data.has(subDomain)) {
+			return { result: false, type: "allowed" };
+		}
+		if (blockedDomainsDb.data.has(subDomain)) {
+			return { result: true, type: "blocked" };
+		}
+	}
 
 	let fuzzyResult: CheckDomainResult | undefined
-
 	for (const fuzzyDomain of fuzzyDomainsDb.data) {
 		if (fuzzyResult) break;
-		const distance = levenshtein.get(fuzzyDomain, domain)
-		let distanceTop = distance
-		if (topLevelDomain !== domain)
-			distanceTop = levenshtein.get(fuzzyDomain, topLevelDomain)
-		const isMatched = distance <= DEFAULT_LEVENSHTEIN_TOLERANCE || distanceTop <= DEFAULT_LEVENSHTEIN_TOLERANCE
-		if (isMatched) {
-			console.log("fuzzy match", { domain, fuzzyDomain, distance })
-			fuzzyResult = { result: true, type: "fuzzy", extra: fuzzyDomain }
+		for (const subDomain of subDomainsToCheck) {
+			const distance = levenshtein.get(fuzzyDomain, subDomain);
+			if (distance <= DEFAULT_LEVENSHTEIN_TOLERANCE) {
+				console.log("fuzzy match", { subDomain, fuzzyDomain, distance });
+				fuzzyResult = { result: true, type: "fuzzy", extra: fuzzyDomain };
+				break;
+			}
 		}
 	}
 

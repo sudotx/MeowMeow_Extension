@@ -331,9 +331,6 @@ function App() {
 				{pageInfo?.addresses && pageInfo.addresses.length > 0 && (
 					<div className="space-y-4">
 						<div className="flex items-center space-x-3">
-							<div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-								<span className="text-white text-xs">💎</span>
-							</div>
 							<h2 className="text-lg font-semibold text-white">Detected Addresses</h2>
 						</div>
 						<div className="grid gap-2">
@@ -375,9 +372,6 @@ function App() {
 				{pageInfo?.tokens && pageInfo.tokens.length > 0 && (
 					<div className="space-y-4">
 						<div className="flex items-center space-x-3">
-							<div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
-								<span className="text-white text-xs">💎</span>
-							</div>
 							<h2 className="text-lg font-semibold text-white">Detected Tokens</h2>
 						</div>
 						<div className="grid gap-2">
