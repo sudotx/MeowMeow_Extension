@@ -10,7 +10,7 @@ console.log("background loaded");
 import Browser from "webextension-polyfill";
 
 import { getStorage } from '../libs/helpers';
-import { checkDomain } from '../libs/phishingDetector';
+import { checkDomain } from '../libs/test-phishingDetector';
 
 // Re-export API functions for background script use
 const backgroundFetchExchangeRates = fetchExchangeRates;
@@ -63,7 +63,7 @@ async function handlePhishingCheck(trigger: string, tab?: Browser.Tabs.Tab) {
 			if (!domain) return;
 			
 			console.log(`Checking domain for phishing: ${domain} (trigger: ${trigger})`);
-			const res = await checkDomain(domain);
+			const res = checkDomain(domain);
 			phishingResult = res;
 			console.log("Phishing check result", { domain, res, trigger });
 			
@@ -158,14 +158,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 		case 'checkDomain':
 			// Handle domain check requests from content script
 			console.log('Checking domain from content script:', request.domain);
-			checkDomain(request.domain).then(result => {
-				console.log('Domain check result for', request.domain, ':', result);
-				sendResponse(result);
-			}).catch(error => {
-				console.log('Error checking domain:', error);
-				sendResponse({ result: false, type: "unknown" });
-			});
-			return true;
+			const result = checkDomain(request.domain);
+			console.log('Domain check result for', request.domain, ':', result);
+			sendResponse(result);
+			break;
 
 		case 'getPhishingResult':
 			// Return phishing result for specific tab or last known result
@@ -211,14 +207,14 @@ Browser.tabs.onUpdated.addListener(async (tabId, onUpdatedInfo, tab) => {
 		activeTabPhishingResults.delete(tab.id);
 	}
 	
-	await handlePhishingCheck('tabUpdate', tab);
+	handlePhishingCheck('tabUpdate', tab);
 });
 
 // monitor tab activations, when the user switches to a different tab that was already open but not active
 Browser.tabs.onActivated.addListener(async (onActivatedInfo) => {
 	Browser.tabs.sendMessage(onActivatedInfo.tabId, { message: "TabActivated" });
 	const tab = await Browser.tabs.get(onActivatedInfo.tabId);
-	await handlePhishingCheck('tabActivated', tab);
+	handlePhishingCheck('tabActivated', tab);
 });
 
 // monitor window focus changes, when the user switches between browser windows
@@ -227,7 +223,7 @@ Browser.windows.onFocusChanged.addListener(async (windowId) => {
 	const tab = await getCurrentTab();
 	if (tab && tab.id) {
 		Browser.tabs.sendMessage(tab.id, { message: "TabActivated" });
-		await handlePhishingCheck('windowFocused', tab);
+		handlePhishingCheck('windowFocused', tab);
 	}
 });
 

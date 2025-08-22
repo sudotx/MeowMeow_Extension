@@ -284,44 +284,54 @@ function App() {
 			</div>
 
 			<div className="relative z-10 p-4 space-y-4 overflow-y-auto max-h-[500px]">
-				{/* Current Page Info with glassmorphism */}
+				{/* Current Page Info with enhanced glassmorphism */}
 				{pageInfo && (
-					<div className="backdrop-blur-xl bg-white/5 rounded-2xl p-4 border border-white/10 shadow-xl">
-						<div className="flex items-center space-x-3 mb-3">
-							<div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-								<span className="text-white text-sm">🌐</span>
-							</div>
-							<h2 className="text-lg font-semibold text-white">Current Page</h2>
-						</div>
-						<div className="space-y-2">
-							<p className="text-sm text-gray-200 font-medium truncate">{pageInfo.url}</p>
-							<div className="space-y-2">
-								<div className="flex items-center space-x-2">
-									<p className={`text-xs font-mono bg-gray-800/50 px-2 py-1 rounded-lg inline-block ${getPhishingStatus().color}`}>
-										{getPhishingStatus().text}
-									</p>
-									<div className="flex space-x-1">
-										<button
-											onClick={refreshPhishingResult}
-											className="text-xs bg-gray-700/50 hover:bg-gray-600/50 px-2 py-1 rounded-lg transition-colors duration-200 hover:text-blue-400"
-											title="Refresh phishing status"
-										>
-											🔄
-										</button>
-										<button
-											onClick={refreshPageInfo}
-											className="text-xs bg-gray-700/50 hover:bg-gray-600/50 px-2 py-1 rounded-lg transition-colors duration-200 hover:text-green-400"
-											title="Refresh all page data"
-										>
-											📄
-										</button>
-									</div>
+					<div className="backdrop-blur-xl bg-white/10 rounded-2xl p-5 border border-white/20 shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 hover:bg-white/15 relative overflow-hidden">
+						{/* Subtle gradient overlay for extra emphasis */}
+						<div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 pointer-events-none"></div>
+						
+						<div className="relative z-10">
+							<div className="flex items-center space-x-3 mb-4">
+								<div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+									<span className="text-white text-lg">🌐</span>
 								</div>
-								{getPhishingStatusDetails() && (
-									<p className="text-xs text-gray-400 italic">
-										{getPhishingStatusDetails()}
+								<h2 className="text-xl font-bold text-white">Current Page</h2>
+							</div>
+							<div className="space-y-3">
+								{/* Enhanced URL display */}
+								<div className="backdrop-blur-xl bg-gradient-to-r from-blue-500/20 to-purple-500/20 rounded-xl p-4 border border-blue-400/30 shadow-lg">
+									<p className="text-lg text-white font-bold break-all leading-relaxed tracking-wide">
+										{pageInfo.url}
 									</p>
-								)}
+								</div>
+								<div className="space-y-2">
+									<div className="flex items-center space-x-2">
+										<p className={`text-sm font-mono bg-gray-800/60 px-3 py-2 rounded-lg inline-block ${getPhishingStatus().color} border border-white/10`}>
+											{getPhishingStatus().text}
+										</p>
+										<div className="flex space-x-2">
+											<button
+												onClick={refreshPhishingResult}
+												className="text-sm bg-gray-700/60 hover:bg-gray-600/60 px-3 py-2 rounded-lg transition-all duration-200 hover:text-blue-400 hover:bg-blue-500/20 border border-white/10"
+												title="Refresh phishing status"
+											>
+												🔄
+											</button>
+											<button
+												onClick={refreshPageInfo}
+												className="text-sm bg-gray-700/60 hover:bg-gray-600/60 px-3 py-2 rounded-lg transition-all duration-200 hover:text-green-400 hover:bg-green-500/20 border border-white/10"
+												title="Refresh all page data"
+											>
+												📄
+											</button>
+										</div>
+									</div>
+									{getPhishingStatusDetails() && (
+										<p className="text-sm text-gray-300 italic bg-gray-800/30 px-3 py-2 rounded-lg border border-white/10">
+											{getPhishingStatusDetails()}
+										</p>
+									)}
+								</div>
 							</div>
 						</div>
 					</div>
