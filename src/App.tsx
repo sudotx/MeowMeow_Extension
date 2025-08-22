@@ -21,12 +21,6 @@ interface ExchangeRate {
 	change24h: number;
 }
 
-interface SwapEstimate {
-	slippage: number;
-	gasCost: number;
-	estimatedOutput: number;
-}
-
 interface PhishingResult {
 	result: boolean;
 	type: "allowed" | "blocked" | "fuzzy" | "unknown";
@@ -37,10 +31,6 @@ function App() {
 	const [pageInfo, setPageInfo] = useState<PageInfo | null>(null);
 	const [_isExtension, setIsExtension] = useState(false);
 	const [exchangeRates, setExchangeRates] = useState<ExchangeRate[]>([]);
-	const [swapEstimate, setSwapEstimate] = useState<SwapEstimate | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
-	const [selectedToken, setSelectedToken] = useState<string>('');
-	const [swapAmount, setSwapAmount] = useState<string>('1');
 	const [phishingResult, setPhishingResult] = useState<PhishingResult | null>(null);
 	const [addressPrices, setAddressPrices] = useState<Record<string, number>>({});
 
@@ -142,65 +132,6 @@ function App() {
 			} catch (error) {
 				console.error('Error fetching address prices:', error);
 			}
-		}
-	};
-
-	// Get swap estimate
-	const getSwapEstimate = async (fromToken: string, toToken: string, amount: number) => {
-		if (typeof chrome !== 'undefined' && chrome.runtime) {
-			try {
-				const estimate = await chrome.runtime.sendMessage({
-					action: 'getSwapEstimate',
-					fromToken,
-					toToken,
-					amount
-				});
-				setSwapEstimate(estimate);
-			} catch (error) {
-				console.error('Error getting swap estimate:', error);
-			}
-		}
-	};
-
-	// Execute swap
-	const executeSwap = async (fromToken: string, toToken: string, amount: number) => {
-		setIsLoading(true);
-		try {
-			if (typeof chrome !== 'undefined' && chrome.runtime) {
-				const success = await chrome.runtime.sendMessage({
-					action: 'executeSwap',
-					fromToken,
-					toToken,
-					amount
-				});
-
-				if (success) {
-					alert('Swap executed successfully!');
-				} else {
-					alert('Swap failed. Please try again.');
-				}
-			}
-		} catch (error) {
-			console.error('Error executing swap:', error);
-			alert('Swap failed. Please check your wallet connection.');
-		} finally {
-			setIsLoading(false);
-		}
-	};
-
-	// Handle swap amount change
-	const handleSwapAmountChange = (amount: string) => {
-		setSwapAmount(amount);
-		if (selectedToken && amount) {
-			getSwapEstimate('ETH', selectedToken, parseFloat(amount));
-		}
-	};
-
-	// Handle token selection
-	const handleTokenSelect = (token: string) => {
-		setSelectedToken(token);
-		if (swapAmount) {
-			getSwapEstimate('ETH', token, parseFloat(swapAmount));
 		}
 	};
 
@@ -416,82 +347,10 @@ function App() {
 													)}
 												</div>
 											</div>
-											<button
-												onClick={() => handleTokenSelect(token.symbol)}
-												className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 rounded-lg text-xs font-semibold transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-purple-500/25 flex-shrink-0"
-											>
-												Swap
-											</button>
 										</div>
 									</div>
 								);
 							})}
-						</div>
-					</div>
-				)}
-
-				{/* Enhanced Swap Interface */}
-				{selectedToken && (
-					<div className="backdrop-blur-xl bg-white/5 rounded-2xl p-4 border border-white/10 shadow-xl">
-						<div className="flex items-center space-x-3 mb-4">
-							<div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-								<span className="text-white text-sm">💱</span>
-							</div>
-							<h3 className="text-lg font-semibold text-white">Swap ETH → {selectedToken}</h3>
-						</div>
-
-						<div className="space-y-4">
-							<div>
-								<label className="block text-sm font-semibold text-gray-200 mb-2">
-									Amount (ETH)
-								</label>
-								<div className="relative">
-									<input
-										type="number"
-										value={swapAmount}
-										onChange={(e) => handleSwapAmountChange(e.target.value)}
-										className="w-full px-4 py-3 bg-gray-800/50 border border-white/10 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-xl transition-all duration-300"
-										placeholder="0.0"
-										min="0"
-										step="0.01"
-									/>
-									<div className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm font-medium">
-										ETH
-									</div>
-								</div>
-							</div>
-
-							{swapEstimate && (
-								<div className="backdrop-blur-xl bg-gray-800/30 rounded-xl p-3 border border-white/10 space-y-2">
-									<div className="flex justify-between items-center">
-										<span className="text-sm text-gray-300 font-medium">Estimated Output:</span>
-										<span className="text-white font-bold">{swapEstimate.estimatedOutput.toFixed(6)} {selectedToken}</span>
-									</div>
-									<div className="flex justify-between items-center">
-										<span className="text-sm text-gray-300 font-medium">Slippage:</span>
-										<span className="text-yellow-400 font-semibold">{swapEstimate.slippage.toFixed(2)}%</span>
-									</div>
-									<div className="flex justify-between items-center">
-										<span className="text-sm text-gray-300 font-medium">Gas Cost:</span>
-										<span className="text-white font-semibold">~${swapEstimate.gasCost.toFixed(2)}</span>
-									</div>
-								</div>
-							)}
-
-							<button
-								onClick={() => executeSwap('ETH', selectedToken, parseFloat(swapAmount))}
-								disabled={isLoading || !swapAmount || parseFloat(swapAmount) <= 0}
-								className="w-full py-3 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:from-gray-600 disabled:to-gray-600 disabled:cursor-not-allowed rounded-xl font-semibold transition-all duration-300 transform hover:scale-[1.02] shadow-lg hover:shadow-purple-500/25 disabled:transform-none disabled:shadow-none"
-							>
-								{isLoading ? (
-									<div className="flex items-center justify-center space-x-2">
-										<div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-										<span>Processing...</span>
-									</div>
-								) : (
-									'Execute Swap'
-								)}
-							</button>
 						</div>
 					</div>
 				)}
