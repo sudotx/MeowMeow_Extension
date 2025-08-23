@@ -1,8 +1,8 @@
-# MeowVerse - DeFi Companion Extension
+# Safefi - DeFi Companion Extension
 
-A modern Chrome extension that enhances your DeFi experience with real-time token detection, exchange rates, and seamless swap functionality powered by GlueX APIs.
+An extension that enhances your DeFi experience with real-time token detection, exchange rates and seamless swap functionality powered by GlueX APIs.
 
-## 🚀 Features
+## Features
 
 ### Core Functionality
 - **Token Detection**: Automatically scans web pages for cryptocurrency tokens and displays real-time exchange rates
