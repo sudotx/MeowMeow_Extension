@@ -26,9 +26,6 @@ const TOKEN_PATTERNS = {
 
 	// Ethereum addresses
 	addresses: /0x[a-fA-F0-9]{40}/g,
-
-	// Common token price patterns
-	prices: /\$[\d,]+\.?\d*/g
 };
 
 // Detect tokens on the current page
@@ -62,7 +59,7 @@ function detectAddresses(): string[] {
 async function checkCurrentDomain() {
 	const domain = window.location.hostname.replace("www.", "");
 	if (!domain) return;
-	
+
 	try {
 		// Send message to background script to check domain
 		chrome.runtime.sendMessage({
@@ -73,7 +70,7 @@ async function checkCurrentDomain() {
 				console.log('Error checking domain:', chrome.runtime.lastError);
 				return;
 			}
-			
+
 			if (response && response.result) {
 				// Show warning banner for phishing sites
 				showPhishingWarning(response);
@@ -123,7 +120,7 @@ function showPhishingWarning(phishingResult: any) {
 			">Dismiss</button>
 		</div>
 	`;
-	
+
 	document.body.appendChild(warningBanner);
 
 	// Add dismiss functionality
@@ -132,16 +129,16 @@ function showPhishingWarning(phishingResult: any) {
 	});
 }
 
-// Create overlay banner
-function createOverlayBanner() {
+// Create overlay banner for asset detection
+function createAssetDetectionBanner() {
 	// Remove existing banner if present
-	const existingBanner = document.getElementById('meowverse-banner');
+	const existingBanner = document.getElementById('safefi-banner');
 	if (existingBanner) {
 		existingBanner.remove();
 	}
 
 	const banner = document.createElement('div');
-	banner.id = 'meowverse-banner';
+	banner.id = 'safefi-banner';
 	banner.innerHTML = `
     <div style="
       position: fixed;
@@ -160,11 +157,11 @@ function createOverlayBanner() {
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     ">
       <div style="display: flex; align-items: center; gap: 8px;">
-        <span style="font-size: 16px;">🐈‍⬛</span>
-        <span>Crypto assets detected. Click to see prices and safety info.</span>
+        <span style="font-size: 16px;">🛡️</span>
+        <span>SafeFi has detected crypto assets on this page.</span>
       </div>
       <div style="display: flex; align-items: center; gap: 8px;">
-        <button id="meowverse-dismiss" style="
+        <button id="safefi-dismiss" style="
           background: none;
           border: none;
           color: white;
@@ -184,7 +181,7 @@ function createOverlayBanner() {
 	document.body.appendChild(banner);
 
 	// Add event listeners
-	document.getElementById('meowverse-dismiss')?.addEventListener('click', () => {
+	document.getElementById('safefi-dismiss')?.addEventListener('click', () => {
 		banner.remove();
 	});
 }
@@ -198,7 +195,7 @@ function shouldShowBanner(tokens: TokenInfo[], addresses: string[]): boolean {
 function setupMessageListener() {
 	chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 		console.log('Content script received message:', request);
-		
+
 		switch (request.action) {
 			case 'getPageInfo':
 				// Get page info
@@ -211,19 +208,19 @@ function setupMessageListener() {
 				};
 				sendResponse(pageInfo);
 				break;
-				
+
 			case 'refreshPhishingCheck':
 				// Re-check domain for phishing
 				checkCurrentDomain();
 				sendResponse({ success: true });
 				break;
-				
+
 			case 'TabUpdated':
 			case 'TabActivated':
 				// Re-check domain when tab is updated or activated
 				setTimeout(checkCurrentDomain, 1000);
 				break;
-				
+
 			default:
 				console.log('Unknown action received:', request.action);
 		}
@@ -233,7 +230,7 @@ function setupMessageListener() {
 // Initialize content script
 function init() {
 	console.log('Initializing content script for:', window.location.href);
-	
+
 	// Setup message listener
 	setupMessageListener();
 
@@ -255,7 +252,7 @@ function init() {
 
 	// Show banner if conditions are met
 	if (shouldShowBanner(tokens, addresses)) {
-		setTimeout(createOverlayBanner, 2000); // Show after 2 seconds
+		setTimeout(createAssetDetectionBanner, 2000); // Show after 2 seconds
 	}
 }
 

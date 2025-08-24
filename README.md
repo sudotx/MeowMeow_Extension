@@ -1,167 +1,212 @@
-# Safefi - DeFi Companion Extension
+# MeowVerse - DeFi Security & Token Detection Extension
 
-An extension that enhances your DeFi experience with real-time token detection, exchange rates and seamless swap functionality powered by GlueX APIs.
+A Chrome extension that provides real-time phishing detection, token identification, and price monitoring for DeFi and cryptocurrency websites. Built with TypeScript, React, and WebExtension APIs.
 
 ## Features
 
 ### Core Functionality
-- **Token Detection**: Automatically scans web pages for cryptocurrency tokens and displays real-time exchange rates
-- **Real-time Exchange Rates**: Fetches live prices from GlueX Exchange Rates API with 24h change indicators
-- **One-Click Swaps**: Execute token swaps directly from the extension using GlueX Router API
-- **Yield Optimization**: Smart overlay banners suggest better APY opportunities via GlueX Yield API
-- **Modern Dark Theme**: Sleek, minimalist UI with adaptive theme support
+
+- **Phishing Detection**: Real-time domain analysis using curated blacklists, whitelists, and fuzzy matching
+- **Token Detection**: Automatic scanning of web pages for cryptocurrency tokens and Ethereum addresses
+- **Price Monitoring**: Real-time token prices from multiple APIs (GlueX, CoinGecko fallback)
+- **Security Overlays**: Warning banners for suspicious domains and phishing attempts
+- **Multi-Source Validation**: Cross-references domains against MetaMask, DeFi Llama, and custom lists
 
 ### Technical Features
-- **Content Script Integration**: Detects tokens and injects optimization banners on DeFi-related pages
-- **Background Script**: Handles API calls and wallet interactions
-- **MetaMask Integration**: Seamless wallet connection for transaction execution
-- **Responsive Design**: Mobile-optimized popup interface
-- **Accessibility**: WCAG compliant with keyboard navigation and screen reader support
+
+- **Content Script Integration**: DOM scanning and overlay injection for security warnings
+- **Background Script**: Persistent phishing detection and API management
+- **Database Caching**: Efficient domain list management with 4-hour refresh cycles
+- **API Fallbacks**: Robust error handling with multiple data sources
+- **Real-time Updates**: Tab monitoring for navigation and domain changes
 
 ## 🛠️ Implementation Details
 
 ### Architecture
+
 ```
 src/
-├── App.tsx                 # Main popup UI component
+├── App.tsx                 # React popup interface
 ├── content/
-│   └── content.ts         # Content script for token detection
+│   └── content.ts         # Content script for page scanning
 ├── background/
-│   └── background.ts      # Background script for API calls
+│   └── background.ts      # Background service worker
 ├── libs/
 │   ├── api.ts            # GlueX API integration
-│   ├── constants.ts      # Configuration constants
-│   └── helpers.ts        # Utility functions
-└── assets/               # Icons and static resources
+│   ├── constants.ts      # Configuration and endpoints
+│   ├── db.ts            # Domain database management
+│   ├── helpers.ts        # Utility functions
+│   ├── phishingDetector.ts # Domain validation logic
+│   └── storage.ts        # Browser storage utilities
+└── assets/               # Static resources
 ```
 
 ### Key Components
 
-#### Token Detection (`content.ts`)
-- Scans page content for common token symbols (ETH, BTC, USDC, etc.)
-- Extracts Ethereum addresses using regex patterns
-- Sends detected tokens to popup for price fetching
+#### Phishing Detection System (`phishingDetector.ts`)
 
-#### Exchange Rate Integration (`api.ts`)
-- Centralized API client for GlueX services
-- Automatic retry logic with exponential backoff
-- Mock data fallback for development
+- Multi-source domain validation against:
+  - MetaMask security lists (fuzzylist, whitelist, blacklist)
+  - DeFi Llama protocol directory
+  - Custom domain lists (`safe-urls.json`)
+  - TVL-filtered protocol lists (minimum threshold: $1M)
+- Fuzzy matching for impersonation detection
+- Real-time domain checking on tab updates
 
-#### Swap Interface (`App.tsx`)
-- Real-time swap estimates with slippage and gas costs
-- MetaMask wallet integration
-- Transaction status feedback
+#### Content Script (`content.ts`)
 
-#### Overlay Banner System
-- Context-aware banner injection on DeFi pages
-- Dismissible optimization suggestions
-- Direct integration with GlueX Yield API
+- **Token Detection**: Regex-based scanning for:
+  - Common token symbols (ETH, BTC, USDC, USDT, DAI, WBTC, UNI, AAVE, COMP, LINK)
+  - Ethereum addresses (`0x[a-fA-F0-9]{40}`)
+  - Price patterns (`$[\d,]+\.?\d*`)
+- **Security Overlays**: Dynamic banner injection for:
+  - Phishing warnings with dismiss functionality
+  - Token detection notifications
+  - Real-time security status updates
 
-### API Integration
+#### Background Service (`background.ts`)
 
-#### GlueX Exchange Rates API
+- **Tab Monitoring**:
+  - `tabs.onUpdated`: Navigation detection
+  - `tabs.onActivated`: Tab switching
+  - `windows.onFocusChanged`: Window focus changes
+- **Message Handling**: Content script communication
+- **API Management**: GlueX integration with fallbacks
+- **State Persistence**: Per-tab phishing results
+
+#### Database Management (`db.ts`)
+
+- **Caching Strategy**: 4-hour refresh cycles using `Browser.alarms`
+- **Data Sources**:
+  - DeFi Llama protocols API
+  - MetaMask security lists
+  - Custom domain configurations
+- **Memory Management**: Efficient Set-based storage for O(1) lookups
+
+#### API Integration (`api.ts`)
+
+- **GlueX Services**:
+  - Exchange Rates API for token pricing
+  - Router API for swap estimates
+  - Yield API for APY opportunities
+- **Fallback Mechanisms**: Mock data generation for development
+- **Error Handling**: Exponential backoff with retry logic
+
+## 🔒 Security Implementation
+
+### Domain Validation Flow
+
 ```typescript
-// Fetch real-time prices
-const rates = await fetchExchangeRates(['ETH', 'BTC', 'USDC']);
+// 1. Extract domain from URL
+const domain = new URL(url).hostname.replace("www.", "");
+
+// 2. Check against multiple sources
+const result = await checkDomain(domain);
+
+// 3. Classify result
+switch (result.type) {
+  case "allowed": // Whitelisted domain
+  case "blocked": // Blacklisted domain
+  case "fuzzy": // Suspicious/impersonation
+  case "unknown": // Not in database
+}
 ```
 
-#### GlueX Router API
-```typescript
-// Get swap estimates
-const estimate = await getSwapEstimate('ETH', 'USDC', 1.0);
+### Content Security
 
-// Execute swaps
-const result = await executeSwap({
-  fromToken: 'ETH',
-  toToken: 'USDC',
-  amount: 1.0,
-  userAddress: '0x...'
-});
-```
-
-#### GlueX Yield API
-```typescript
-// Fetch yield optimization options
-const options = await fetchYieldOptions();
-```
+- **DOM Access**: Limited to token detection and overlay injection
+- **Message Passing**: Secure communication between content and background scripts
+- **API Validation**: Input sanitization and rate limiting
+- **Storage Isolation**: Extension-specific storage areas
 
 ## 🎨 UI/UX Design
 
-### Design Principles
-- **Minimalist**: Clean, uncluttered interface focusing on essential information
-- **Dark-First**: Modern dark theme with light mode toggle
-- **Responsive**: Adaptive layout for different screen sizes
-- **Accessible**: High contrast, keyboard navigation, screen reader support
+### Popup Interface (`App.tsx`)
 
-### Color Scheme
-- **Primary**: Blue (#3B82F6) for actions and highlights
-- **Background**: Dark gray (#111827) for main surfaces
-- **Surface**: Medium gray (#1F2937) for cards and panels
-- **Text**: White (#FFFFFF) for primary text, gray (#9CA3AF) for secondary
+- **Current Page Analysis**: URL display with security status
+- **Token Detection**: Real-time price display with 24h changes
+- **Address Monitoring**: Ethereum address detection with price lookup
+- **Security Status**: Phishing detection results with refresh capabilities
 
-### Layout Structure
-```
-┌─────────────────────────┐
-│ 🐈‍⬛ MeowVerse    ☀️/🌙 │
-├─────────────────────────┤
-│ Current Page Info       │
-├─────────────────────────┤
-│ Detected Tokens         │
-│ [Token] [Price] [Swap]  │
-├─────────────────────────┤
-│ Swap Interface          │
-│ [Amount] [Estimate]     │
-│ [Execute Swap]          │
-├─────────────────────────┤
-│ Settings                │
-│ [Toggles]               │
-└─────────────────────────┘
-```
+### Overlay System
+
+- **Phishing Warnings**: Red gradient banners for blocked domains
+- **Token Notifications**: Blue gradient banners for detected assets
+- **Dismissible UI**: User-controlled banner management
+- **Responsive Design**: Adaptive positioning and sizing
 
 ## 🔧 Development
 
 ### Prerequisites
-- Node.js 16+
-- Yarn or npm
-- Chrome browser for testing
 
-### Setup
+- Node.js 18+
+- TypeScript 5.0+
+- Chrome/Chromium browser
+- WebExtension polyfill
+
+### Build System
+
 ```bash
 # Install dependencies
 yarn install
 
-# Start development server
+# Development mode
 yarn dev
 
-# Build for production
+# Production build
 yarn build
+
 ```
 
 ### Extension Loading
-1. Open Chrome and navigate to `chrome://extensions/`
+
+1. Navigate to `chrome://extensions/`
 2. Enable "Developer mode"
-3. Click "Load unpacked" and select the `dist` folder
-4. The extension icon should appear in your toolbar
+3. Load unpacked extension from `dist/` folder
+4. Verify background script initialization
 
-### Testing
-- Visit DeFi websites (Uniswap, Aave, etc.) to test token detection
-- Check the popup for detected tokens and exchange rates
-- Test swap functionality with MetaMask connected
+## 📊 Performance Characteristics
 
-## 🔒 Security Considerations
+### Database Operations
 
-- API keys are not hardcoded (use environment variables in production)
-- Wallet interactions require explicit user consent
-- Content scripts only access necessary page data
-- All external API calls include proper error handling
+- **Initialization**: ~2-5 seconds for first load
+- **Lookup Time**: O(1) for domain validation
+- **Memory Usage**: ~2-5MB for domain lists
+- **Refresh Cycles**: 4-hour intervals with background alarms
 
 ## 🚀 Future Enhancements
 
-- [ ] Multi-chain support (Polygon, BSC, etc.)
-- [ ] Portfolio tracking and analytics
-- [ ] Advanced yield farming strategies
-- [ ] Social trading features
-- [ ] Mobile app companion
+- [ ] **Multi-chain Support**: Ethereum and HyperEVM, planning Polygon, BSC, Arbitrum integration
+- [ ] **Advanced Phishing**: ML-based URL analysis
+- [ ] **Portfolio Tracking**: Wallet balance monitoring
+- [ ] **Social Features**: Community-driven domain reporting
+- [ ] **API Rate Limiting**: Intelligent request throttling
+
+## ⚠️ Current Limitations
+
+- **Single Chain**: Currently only supports Ethereum mainnet
+- **Static Lists**: Domain validation relies on external curated lists
+- **No User Input**: Users cannot contribute to domain reputation system
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+- **Background Script Not Loading**: Check `chrome://extensions/` for errors
+- **Token Detection Failing**: Verify content script injection
+- **API Errors**: Check network connectivity and API key configuration
+- **Database Not Updating**: Verify alarm permissions and storage access
+
+### Debug Mode
+
+```typescript
+// Enable verbose logging
+console.log("Database state:", {
+  allowed: allowedDomainsDb.data.size,
+  blocked: blockedDomainsDb.data.size,
+  fuzzy: fuzzyDomainsDb.data.length,
+});
+```
 
 ## 📝 License
 
@@ -170,11 +215,13 @@ MIT License - see LICENSE file for details
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
+2. Create feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Open Pull Request
 
 ## 📞 Support
 
-For questions or support, please open an issue on GitHub or contact the development team.
+- **Issues**: GitHub issue tracker
+- **Documentation**: Code comments and inline docs
+- **Development**: TypeScript definitions and error messages

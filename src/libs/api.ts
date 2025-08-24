@@ -9,59 +9,6 @@ export interface ExchangeRate {
 	marketCap?: number;
 }
 
-export interface SwapEstimate {
-	slippage: number;
-	gasCost: number;
-	estimatedOutput: number;
-	route?: string[];
-	priceImpact?: number;
-}
-
-export interface YieldOption {
-	protocol: string;
-	apy: number;
-	risk: 'low' | 'medium' | 'high';
-	tvl?: number;
-	description?: string;
-}
-
-export interface SwapRequest {
-	fromToken: string;
-	toToken: string;
-	amount: number;
-	userAddress: string;
-	slippageTolerance?: number;
-}
-
-export interface LiquidityInfo {
-	protocol: string;
-	tvl: number;
-	apy?: number;
-	risk?: string;
-}
-
-export interface PriceRequest {
-	chainID: string;
-	inputToken: string;
-	outputToken: string;
-	inputAmount: string;
-	orderType: 'SELL' | 'BUY';
-	userAddress: string;
-	outputReceiver: string;
-	uniquePID?: string;
-}
-
-export interface QuoteRequest {
-	chainID: string;
-	inputToken: string;
-	outputToken: string;
-	inputAmount: string;
-	orderType: 'SELL' | 'BUY';
-	userAddress: string;
-	outputReceiver: string;
-	uniquePID?: string;
-}
-
 export interface ExchangeRateRequest {
 	domestic_blockchain: string;
 	domestic_token: string;
@@ -69,60 +16,20 @@ export interface ExchangeRateRequest {
 	foreign_token: string;
 }
 
-export interface HistoricalApyRequest {
-	pool_address: string;
-	lp_token_address: string;
-	chain: string;
-	input_token: string;
-}
-
-export interface DilutedApyRequest {
-	pool_address: string;
-	lp_token_address: string;
-	chain: string;
-	input_token: string;
-	input_amount: string;
-}
-
-export interface TvlRequest {
-	pool_address: string;
-	lp_token_address: string;
-	chain: string;
-}
-
 // GlueX API configuration
 const GLUEX_CONFIG = {
-	ROUTER_URL: 'https://router.gluex.xyz',
 	EXCHANGE_RATES_URL: 'https://exchange-rates.gluex.xyz',
-	YIELD_URL: 'https://yield-api.gluex.xyz',
 	TIMEOUT: 10000,
 	RETRY_ATTEMPTS: 3
 };
 
-// API key - should be stored in environment variables
-const API_KEY = process.env.GLUEX_API_KEY || '';
-const INTEGRATOR_PID = process.env.INTEGRATOR_PID || ''; // this is the uniquePID parameter in the body of each API request:
+// // API key - should be stored in environment variables
+// const API_KEY = process.env.GLUEX_API_KEY || '';
+// const INTEGRATOR_PID = process.env.INTEGRATOR_PID || ''; // this is the uniquePID parameter in the body of each API request:
 
 // Create axios instances for different services
-const routerClient = axios.create({
-	baseURL: GLUEX_CONFIG.ROUTER_URL,
-	timeout: GLUEX_CONFIG.TIMEOUT,
-	headers: {
-		'Content-Type': 'application/json',
-		'x-api-key': API_KEY
-	}
-});
-
 const exchangeRatesClient = axios.create({
 	baseURL: GLUEX_CONFIG.EXCHANGE_RATES_URL,
-	timeout: GLUEX_CONFIG.TIMEOUT,
-	headers: {
-		'Content-Type': 'application/json'
-	}
-});
-
-const yieldClient = axios.create({
-	baseURL: GLUEX_CONFIG.YIELD_URL,
 	timeout: GLUEX_CONFIG.TIMEOUT,
 	headers: {
 		'Content-Type': 'application/json'
@@ -166,81 +73,6 @@ async function apiRequest<T>(
 	throw new Error('API request failed after all retry attempts');
 }
 
-// Get liquidity information from GlueX Router
-export async function getLiquidity(): Promise<any> {
-	try {
-		const response = await apiRequest<any>(routerClient, '/liquidity');
-		return response;
-	} catch (error) {
-		console.error('Error fetching liquidity:', error);
-		throw error;
-	}
-}
-
-// Get price from GlueX Router
-export async function getPrice(priceRequest: PriceRequest): Promise<any> {
-	try {
-		const response = await apiRequest<any>(routerClient, '/v1/price', {
-			method: 'POST',
-			data: { ...priceRequest, uniquePID: INTEGRATOR_PID }
-		});
-		return response;
-	} catch (error) {
-		console.error('Error getting price:', error);
-		throw error;
-	}
-}
-
-// Get quote from GlueX Router
-export async function getQuote(quoteRequest: QuoteRequest): Promise<any> {
-	try {
-		const response = await apiRequest<any>(routerClient, '/v1/quote', {
-			method: 'POST',
-			data: { ...quoteRequest, uniquePID: INTEGRATOR_PID }
-		});
-		return response;
-	} catch (error) {
-		console.error('Error getting quote:', error);
-		throw error;
-	}
-}
-
-// Get swap estimate from GlueX Router (using quote endpoint)
-export async function getSwapEstimate(
-	fromToken: string,
-	toToken: string,
-	amount: number,
-	userAddress: string,
-	outputReceiver: string,
-	chainID: string = 'ethereum'
-): Promise<SwapEstimate> {
-	try {
-		const quoteRequest: QuoteRequest = {
-			chainID,
-			inputToken: fromToken,
-			outputToken: toToken,
-			inputAmount: amount.toString(),
-			orderType: 'SELL',
-			userAddress,
-			outputReceiver,
-		};
-
-		const response = await getQuote(quoteRequest);
-
-		// Transform the response to match our SwapEstimate interface
-		return {
-			slippage: response.slippage || 0.5,
-			gasCost: response.gasCost || 0.02,
-			estimatedOutput: response.outputAmount || amount * 0.995,
-			route: response.route || [fromToken, toToken],
-			priceImpact: response.priceImpact || 0.1
-		};
-	} catch (error) {
-		console.error('Error getting swap estimate:', error);
-		throw error;
-	}
-}
-
 // Get exchange rates using GlueX Exchange Rates API
 export async function getExchangeRates(rateRequests: ExchangeRateRequest[]): Promise<any[]> {
 	try {
@@ -257,6 +89,9 @@ export async function getExchangeRates(rateRequests: ExchangeRateRequest[]): Pro
 
 // Fetch exchange rates for multiple tokens (convenience function)
 export async function fetchExchangeRates(tokens: string[]): Promise<ExchangeRate[]> {
+	if (tokens.length === 0) {
+		return [];
+	}
 	try {
 		// Convert token symbols to contract addresses (simplified)
 		const rateRequests: ExchangeRateRequest[] = tokens.map(token => ({
@@ -268,112 +103,24 @@ export async function fetchExchangeRates(tokens: string[]): Promise<ExchangeRate
 
 		const rates = await getExchangeRates(rateRequests);
 
-		return tokens.map((token, index) => ({
-			symbol: token,
-			price: rates[index]?.rate || Math.random() * 1000 + 1,
-			change24h: (Math.random() - 0.5) * 20,
-			volume24h: Math.random() * 1000000,
-			marketCap: Math.random() * 10000000
-		}));
+		// Assuming the 'rates' response array matches the order of 'tokens'
+		return tokens.map((token, index) => {
+			const rateInfo = rates[index];
+			return {
+				symbol: token,
+				price: rateInfo?.rate || 0,
+				// The GlueX Exchange Rates API doesn't provide these fields in the documented response.
+				// Defaulting to 0.
+				change24h: rateInfo?.change24h || 0,
+				volume24h: rateInfo?.volume24h || 0,
+				marketCap: rateInfo?.marketCap || 0
+			};
+		});
 	} catch (error) {
 		console.error('Error fetching exchange rates:', error);
-		// Return mock data for development
-		return tokens.map(symbol => ({
-			symbol,
-			price: Math.random() * 1000 + 1,
-			change24h: (Math.random() - 0.5) * 20,
-			volume24h: Math.random() * 1000000,
-			marketCap: Math.random() * 10000000
-		}));
-	}
-}
-
-// Get active protocols from GlueX Yield API
-export async function getActiveProtocols(): Promise<any[]> {
-	try {
-		const response = await apiRequest<any[]>(yieldClient, '/active-protocols');
-		return response;
-	} catch (error) {
-		console.error('Error fetching active protocols:', error);
-		throw error;
-	}
-}
-
-// Get historical APY from GlueX Yield API
-export async function getHistoricalApy(request: HistoricalApyRequest): Promise<any> {
-	try {
-		const response = await apiRequest<any>(yieldClient, '/historical-apy', {
-			method: 'POST',
-			data: request
-		});
-		return response;
-	} catch (error) {
-		console.error('Error fetching historical APY:', error);
-		throw error;
-	}
-}
-
-// Get diluted APY from GlueX Yield API
-export async function getDilutedApy(request: DilutedApyRequest): Promise<any> {
-	try {
-		const response = await apiRequest<any>(yieldClient, '/diluted-apy', {
-			method: 'POST',
-			data: request
-		});
-		return response;
-	} catch (error) {
-		console.error('Error fetching diluted APY:', error);
-		throw error;
-	}
-}
-
-// Get TVL from GlueX Yield API
-export async function getTvl(request: TvlRequest): Promise<any> {
-	try {
-		const response = await apiRequest<any>(yieldClient, '/tvl', {
-			method: 'POST',
-			data: request
-		});
-		return response;
-	} catch (error) {
-		console.error('Error fetching TVL:', error);
-		throw error;
-	}
-}
-
-// Get yield opportunities for a specific token using GlueX Yield API
-export async function getYieldOpportunities(token: string): Promise<YieldOption[]> {
-	try {
-		const protocols = await getActiveProtocols();
-		// Filter protocols that support the given token
-		return protocols
-			.filter(protocol => protocol.supportedTokens?.includes(token))
-			.map(protocol => ({
-				protocol: protocol.name || protocol.protocol,
-				apy: protocol.apy || 0,
-				risk: protocol.risk || 'medium',
-				tvl: protocol.tvl || 0,
-				description: protocol.description || ''
-			}));
-	} catch (error) {
-		console.error('Error fetching yield opportunities:', error);
-		// Return mock data for development
-		return [
-			{
-				protocol: 'Aave',
-				apy: 3.2,
-				risk: 'low',
-				tvl: 15000000000,
-				description: 'Leading lending protocol with high liquidity'
-			},
-			{
-				protocol: 'Compound',
-				apy: 2.8,
-				risk: 'low',
-				tvl: 8000000000,
-				description: 'Established lending protocol'
-			}
-		];
+		// Return an empty array or a partially failed state
+		// For now, returning an empty array on failure.
+		return [];
 	}
 }
 

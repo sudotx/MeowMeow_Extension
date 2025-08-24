@@ -81,10 +81,22 @@ async function getData() {
 	const allowedDomains = getUniqueItems(metamaskAllowedDomains, protocolDomains, defillamaDomains, ['x.com'])
 	console.log("allowedDomainsDb", allowedDomains.length);
 
-	const blockedDomains = getUniqueItems(metamaskBlockedDomains, defillamaBlockedDomains)
+
+	const customDataDomains = (await fetch("/safe-urls.json").then((res) => { res.json() })) as {
+		version: number;
+		whitelist: string[];
+		blacklist?: string[];
+		fuzzylist?: string[];
+	};
+
+	const customBlockListedDomains = customDataDomains.blacklist ?? []
+	const customFuzzyListedDomains = customDataDomains.fuzzylist ?? []
+
+
+	const blockedDomains = getUniqueItems(metamaskBlockedDomains, defillamaBlockedDomains, customBlockListedDomains)
 	console.log("blockedDomainsDb", blockedDomains.length);
 
-	const fuzzyDomains = getUniqueItems(metamaskFuzzyDomains, protocolDomains, defillamaDomains, defillamaFuzzyDomains)
+	const fuzzyDomains = getUniqueItems(metamaskFuzzyDomains, protocolDomains, defillamaDomains, defillamaFuzzyDomains, customFuzzyListedDomains)
 	console.log("fuzzyDomainsDb", fuzzyDomains.length);
 
 	console.timeEnd(cacheKey)

@@ -34,8 +34,6 @@ function App() {
 	const [phishingResult, setPhishingResult] = useState<PhishingResult | null>(null);
 	const [addressPrices, setAddressPrices] = useState<Record<string, number>>({});
 
-
-
 	useEffect(() => {
 		// Check if running as Chrome extension
 		if (typeof chrome !== 'undefined' && chrome.tabs) {
@@ -59,6 +57,10 @@ function App() {
 
 					// Get phishing status
 					chrome.runtime.sendMessage({ action: 'getPhishingResult' }, (response) => {
+						if (chrome.runtime.lastError) {
+							console.error('Error getting phishing result:', chrome.runtime.lastError);
+							return;
+						}
 						setPhishingResult(response);
 					});
 				}
@@ -87,7 +89,7 @@ function App() {
 							}, 500);
 						}
 					});
-					
+
 					// Also refresh page info
 					chrome.tabs.sendMessage(tabs[0].id!, { action: 'getPageInfo' }, (response) => {
 						if (response) {
@@ -159,7 +161,7 @@ function App() {
 
 	const getPhishingStatus = () => {
 		if (!phishingResult) return { text: 'Checking...', color: 'text-gray-400' };
-		
+
 		switch (phishingResult.type) {
 			case 'allowed':
 				return { text: 'Safe', color: 'text-green-500' };
@@ -175,7 +177,7 @@ function App() {
 
 	const getPhishingStatusDetails = () => {
 		if (!phishingResult) return null;
-		
+
 		switch (phishingResult.type) {
 			case 'fuzzy':
 				return phishingResult.extra ? `Impersonating ${phishingResult.extra}` : 'Suspicious domain detected';
@@ -202,12 +204,12 @@ function App() {
 				<div className="flex items-center justify-between p-4">
 					<div className="flex items-center space-x-3">
 						<div className="relative">
-							<div className="text-2xl animate-bounce" style={{ animationDuration: '3s' }}>🐈‍⬛</div>
+							<div className="text-2xl animate-bounce" style={{ animationDuration: '3s' }}>🛡️</div>
 							<div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
 						</div>
 						<div>
 							<h1 className="text-lg font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-								MeowVerse
+								SafeFi
 							</h1>
 						</div>
 					</div>
@@ -220,7 +222,7 @@ function App() {
 					<div className="backdrop-blur-xl bg-white/10 rounded-2xl p-5 border border-white/20 shadow-2xl hover:shadow-purple-500/20 transition-all duration-300 hover:bg-white/15 relative overflow-hidden">
 						{/* Subtle gradient overlay for extra emphasis */}
 						<div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5 pointer-events-none"></div>
-						
+
 						<div className="relative z-10">
 							<div className="flex items-center space-x-3 mb-4">
 								<div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
@@ -243,14 +245,14 @@ function App() {
 										<div className="flex space-x-2">
 											<button
 												onClick={refreshPhishingResult}
-												className="text-sm bg-gray-700/60 hover:bg-gray-600/60 px-3 py-2 rounded-lg transition-all duration-200 hover:text-blue-400 hover:bg-blue-500/20 border border-white/10"
+												className="text-sm bg-gray-700/60 px-3 py-2 rounded-lg transition-all duration-200 hover:text-blue-400 hover:bg-blue-500/20 border border-white/10"
 												title="Refresh phishing status"
 											>
 												🔄
 											</button>
 											<button
 												onClick={refreshPageInfo}
-												className="text-sm bg-gray-700/60 hover:bg-gray-600/60 px-3 py-2 rounded-lg transition-all duration-200 hover:text-green-400 hover:bg-green-500/20 border border-white/10"
+												className="text-sm bg-gray-700/60 px-3 py-2 rounded-lg transition-all duration-200 hover:text-green-400 hover:bg-green-500/20 border border-white/10"
 												title="Refresh all page data"
 											>
 												📄
@@ -366,4 +368,4 @@ function App() {
 	);
 }
 
-export default App;
+export default App
